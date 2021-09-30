@@ -4,6 +4,9 @@ const http=require(`http`);
 const { parse } = require("path");
 const WebSocket=require(`ws`);
 const SocketIO = require(`socket.io`);
+const {Server}=require(`socket.io`);
+const {instrument}=require(`@socket.io/admin-ui`);
+
 
 app.set("view engine","pug");
 app.set("views",__dirname+`/views`);
@@ -13,7 +16,16 @@ app.get("/*",(req,res)=>res.redirect("/"));
 
 //socket io 이용
 const httpServer=http.createServer(app);
-const wsServer =SocketIO(httpServer);
+const wsServer = new Server(httpServer, {
+    cors: {
+      origin: ["https://admin.socket.io"],
+      credentials: true,
+    },
+  });
+  
+  instrument(wsServer, {
+    auth: false,
+  });
 //socket io 설치만으로 url을 생성함 : 현재 url/socket.io/socket.io.js
 const publicRooms=()=>{
     const {sockets:{adapter:{sids,rooms}}}=wsServer;//socket과 room 가져옴
