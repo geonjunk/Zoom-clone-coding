@@ -121,11 +121,16 @@ socket.on("welcome",async ()=>{
     socket.emit("offer",offer,roomName)//어떤 방이 offer emit 할건지, 즉, 누구한테 이 offer 보낼지를 넣어 보내야하기때문에 방이름을 같이 보냄
     //offer를 보내는쪽에서 발생
 });//누군가 우리방에 들어왔을 때
+
 socket.on("answer",(answer)=>{
     console.log("received the answer");
     myPeerConnection.setRemoteDescription(answer);
 });
 
+socket.on("ice",(ice)=>{//icecandidate를 받는 이벤트
+    console.log("received candidate");
+    myPeerConnection.addIceCandidate(ice);//상대방이 보내 icecandidate 받음
+});
 
 socket.on("offer",async(offer)=>{
     console.log("received the offer");
@@ -139,12 +144,21 @@ socket.on("offer",async(offer)=>{
 const makeConnection=()=>{
     myPeerConnection = new RTCPeerConnection();
     myPeerConnection.addEventListener("icecandidate",handleIce);
+    myPeerConnection.addEventListener("addstream",handleAddStream);//peer로 부터 event 받음
     myStream
       .getTracks()
       .forEach((track) => myPeerConnection.addTrack(track, myStream));//양쪽 브라우저에서 카메라와 마이크의 데이터 stream을 받아서 그것들을 connection 안에 집어넣음
 };
 
 const handleIce=(data)=>{
-    console.log("got ice candidate");
-    console.log(data);
+    console.log("sent candidate");
+    socket.emit("ice",data.candidate,roomName);//icecandidate 서버로 넘김
+}
+const handleAddStream=(data)=>{
+    const peerFace=document.getElementById("peerFace");
+    peerFace.srcObject=data.stream;
+    
+    /*console.log("got an event from my peer");
+    console.log("Peer's Stream" ,data.stream);
+    console.log("My Stream",myStream);*/
 }
