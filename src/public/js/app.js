@@ -85,6 +85,13 @@ const handleCameraClick=()=>{
 
 const handleCameraChange= async ()=>{
    await getMedia(camerasSelect.value);
+
+   if(myPeerConnection){
+       const videoTrack=myStream.getVideoTracks()[0];
+       const videoSender=myPeerConnection.getSenders().find((sender)=>sender.track.kind==="video");
+       console.log(videoSender);
+       videoSender.replaceTrack(videoTrack);//다른 카메라 track으로 변경
+   }
 };
 muteBtn.addEventListener("click",handleMuteClick);
 cameraBtn.addEventListener("click",handleCameraClick);
@@ -142,12 +149,24 @@ socket.on("offer",async(offer)=>{
 })//offer를 받는 쪽에서 발생
 //RTC Code
 const makeConnection=()=>{
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        iceServers:[
+            {
+                urls: [
+                    "stun:stun.l.google.com:19302",
+                    "stun:stun1.l.google.com:19302",
+                    "stun:stun2.l.google.com:19302",
+                    "stun:stun3.l.google.com:19302",
+                    "stun:stun4.l.google.com:19302",
+                  ],
+            }
+        ]
+    });
     myPeerConnection.addEventListener("icecandidate",handleIce);
     myPeerConnection.addEventListener("addstream",handleAddStream);//peer로 부터 event 받음
     myStream
       .getTracks()
-      .forEach((track) => myPeerConnection.addTrack(track, myStream));//양쪽 브라우저에서 카메라와 마이크의 데이터 stream을 받아서 그것들을 connection 안에 집어넣음
+      .forEach((track) => myPeerConnection.addTrack(track, myStream));//카메라와 마이크의 데이터 stream을 받아서 그것들을 connection 안에 집어넣음
 };
 
 const handleIce=(data)=>{
