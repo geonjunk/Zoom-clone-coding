@@ -4,9 +4,6 @@ const http=require(`http`);
 const { parse } = require("path");
 const WebSocket=require(`ws`);
 const SocketIO = require(`socket.io`);
-const {Server}=require(`socket.io`);
-const {instrument}=require(`@socket.io/admin-ui`);
-
 
 app.set("view engine","pug");
 app.set("views",__dirname+`/views`);
@@ -14,7 +11,25 @@ app.use("/public",express.static(__dirname+"/public"));//정적 파일 제공
 app.get(`/`,(req,res)=>res.render("home"));
 app.get("/*",(req,res)=>res.redirect("/"));
 
+//webRtc
+const httpServer=http.createServer(app);
+const wsServer=SocketIO(httpServer);
+
+wsServer.on("connection",socket=>{
+    socket.on("join_room",(roomName)=>{
+        socket.join(roomName);
+        socket.to(roomName).emit("welcome");
+    });
+    socket.on("offer",(offer,roomName)=>{
+        socket.to(roomName).emit("offer",offer);
+    });
+    socket.on("answer",(answer,roomName)=>{
+        socket.to(roomName).emit("answer",answer);
+    });
+});
+
 //socket io 이용
+/*
 const httpServer=http.createServer(app);
 const wsServer = new Server(httpServer, {
     cors: {
@@ -67,9 +82,10 @@ wsServer.on("connection",(socket)=>{
     })
     socket.on("nickname",(nickname)=>(socket["nickname"]=nickname));
 });
+*/
 
-/*
 //ws
+/*
 const handleListen=()=>console.log(`Listening on http and ws://localhost:3000`)
 const server =http.createServer(app);//여기서 서버를 만들건데 express application으로 부터 서버를 만든다 이건 http 서버
 const wss= new WebSocket.Server({server});// 여기서부터 ws 서버
